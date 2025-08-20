@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "dev": "nodemon --watch src --ext ts,json --exec \"npx ts-node -r dotenv/config --transpile-only --project ./tsconfig.json\" src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  }
+}

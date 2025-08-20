@@ -1,0 +1,14 @@
+export type Platform = "meta" | "tiktok";
+export type DateRangeEnum = "last7" | "last14" | "last30";
+export type Cadence = "manual" | "hourly" | "every12h" | "daily";
+export type Delivery = "email" | "link";
+
+export interface ReportConfig {
+  platform: Platform;
+  metrics: string[];
+  level: string;
+  dateRangeEnum: DateRangeEnum;
+  cadence: Cadence;
+  delivery: Delivery;
+  email?: string | null;
+}

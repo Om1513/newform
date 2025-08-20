@@ -1,0 +1,232 @@
+# Backend Cursor Rules - Express.js API Server
+
+## Framework and Architecture
+
+- Use Express.js with TypeScript for the API server
+- Implement RESTful API design principles
+- Use middleware pattern for cross-cutting concerns (CORS, authentication, logging)
+- Separate concerns with dedicated modules (routes, services, utilities)
+- Follow the established project structure in `server/src/`
+
+## Code Style and Structure
+
+- Write concise, technical TypeScript code
+- Keep functions pure and side-effect free when possible
+- Use functional programming patterns over object-oriented
+- Structure files: imports, types, constants, functions, exports
+- Keep files under 300 lines; split when it improves clarity
+- Separate business logic from HTTP handling
+
+## TypeScript Usage
+
+- Use TypeScript with strict mode enabled for all backend code
+- Prefer interfaces over types for request/response objects
+- Use proper typing for Express Request and Response objects
+- Define API types that match frontend expectations
+- Use Zod for runtime validation and type inference
+- Avoid `any` type; use proper generics instead
+
+## Error Handling
+
+- Implement comprehensive error handling middleware
+- Use structured error responses with consistent format
+- Log errors with appropriate context and stack traces
+- Handle async errors properly with try-catch or error middleware
+- Use proper HTTP status codes for different error types
+- Validate all inputs at API boundary
+
+## API Design
+
+- Use RESTful endpoints with clear resource naming
+- Implement proper HTTP methods (GET, POST, PUT, DELETE)
+- Use consistent response formats across all endpoints
+- Include proper status codes and error messages
+- Implement request validation using Zod schemas
+- Use proper content-type headers
+
+## Environment Configuration
+
+- Use dotenv for environment variable management
+- Validate required environment variables at startup
+- Use proper defaults for non-critical configuration
+- Keep sensitive data in environment variables only
+- Use different configurations for different environments
+- Document all environment variables in README
+
+## Security Practices
+
+- Implement proper CORS configuration
+- Validate and sanitize all user inputs
+- Use parameterized queries to prevent injection attacks
+- Implement rate limiting for API endpoints
+- Use secure headers and middleware
+- Never log sensitive information (passwords, tokens)
+
+## External Integrations
+
+- Use proper error handling for external API calls
+- Implement retry logic with exponential backoff
+- Use timeout configuration for external requests
+- Cache external API responses when appropriate
+- Handle rate limits from external services
+- Use proper authentication for external services
+
+## Data Persistence
+
+- Use proper file system operations for report storage
+- Implement atomic operations for file writes
+- Use proper error handling for I/O operations
+- Organize files with meaningful naming conventions
+- Clean up temporary files and handle disk space
+- Use streams for large file operations
+
+## Scheduled Tasks
+
+- Use node-cron for scheduled report generation
+- Implement proper error handling in scheduled tasks
+- Log scheduled task execution and results
+- Handle timezone considerations properly
+- Implement job queuing for long-running tasks
+- Use proper cleanup for failed tasks
+
+## Email and Notifications
+
+- Use Resend for email delivery with proper error handling
+- Implement proper email templating and formatting
+- Handle email delivery failures gracefully
+- Use proper rate limiting for email sending
+- Implement proper unsubscribe mechanisms
+- Log email delivery status and errors
+
+## OpenAI Integration
+
+- Handle OpenAI API rate limits and errors
+- Implement proper prompt engineering practices
+- Use appropriate model parameters for report generation
+- Handle token limits and content truncation
+- Implement fallback strategies for API failures
+- Monitor and log API usage and costs
+
+## Logging and Monitoring
+
+- Use structured logging with consistent format
+- Log important business events and errors
+- Include request IDs for tracing
+- Use appropriate log levels (error, warn, info, debug)
+- Avoid logging sensitive information
+- Implement health checks and status endpoints
+
+## Performance Optimization
+
+- Use appropriate middleware order for performance
+- Implement request/response compression
+- Use efficient algorithms for data processing
+- Cache computation results when beneficial
+- Use streaming for large data processing
+- Monitor memory usage and prevent leaks
+
+## File Organization
+
+```
+server/
+├── src/
+│   ├── index.ts           # Application entry point
+│   ├── routes.ts          # API route definitions
+│   ├── scheduler.ts       # Cron job scheduling
+│   ├── report.ts          # Report generation logic
+│   └── store.ts           # Data persistence layer
+├── reports/               # Generated report storage
+├── package.json          # Dependencies and scripts
+└── tsconfig.json         # TypeScript configuration
+```
+
+## Import Organization
+
+```typescript
+// Keep dotenv import first
+import "dotenv/config"
+
+// Node.js built-ins
+import fs from "fs"
+import path from "path"
+
+// External libraries
+import express from "express"
+import cors from "cors"
+import axios from "axios"
+import cron from "node-cron"
+
+// Internal modules
+import { generateReport } from "./report"
+import { scheduleReports } from "./scheduler"
+
+// Types
+import type { ReportConfig } from "../types/report"
+```
+
+## Express Patterns
+
+- Use proper middleware for request validation
+- Implement error handling middleware as the last middleware
+- Use proper async/await patterns in route handlers
+- Return consistent JSON responses
+- Use proper status codes for different operations
+- Implement request logging and timing
+
+## API Response Format
+
+```typescript
+// Success response
+{
+  success: true,
+  data: any,
+  message?: string
+}
+
+// Error response
+{
+  success: false,
+  error: string,
+  details?: any
+}
+```
+
+## Error Handling Middleware
+
+```typescript
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack)
+  res.status(500).json({
+    success: false,
+    error: "Internal Server Error",
+    ...(process.env.NODE_ENV === "development" && { details: err.message })
+  })
+})
+```
+
+## Environment Variables
+
+- `SERVER_PORT` - Server port (default: 4000)
+- `NEWFORM_API_BASE` - External API base URL
+- `NEWFORM_API_TOKEN` - API authentication token
+- `OPENAI_API_KEY` - OpenAI API key
+- `RESEND_API_KEY` - Email service API key
+- `NODE_ENV` - Environment (development/production)
+
+## Development Practices
+
+- Use nodemon for development with TypeScript compilation
+- Implement proper build process with TypeScript compiler
+- Use proper module resolution and path mapping
+- Handle process signals for graceful shutdown
+- Implement proper testing for API endpoints
+- Use proper deployment configuration
+
+## Testing Guidelines (when implemented)
+
+- Test API endpoints with proper request/response validation
+- Mock external dependencies (OpenAI, Resend, file system)
+- Test error conditions and edge cases
+- Use proper test data and fixtures
+- Test scheduled job functionality
+- Implement integration tests for complete workflows

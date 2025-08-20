@@ -1,0 +1,196 @@
+---
+alwaysApply: true
+---
+
+# General Cursor Rules - Scheduled Insight Reports
+
+## Code Consistency and Standards
+
+- Follow the existing TypeScript project structure with separate `web/` and `server/` directories
+- Maintain consistency with existing code patterns and practices
+- Keep imports alphabetically sorted within their groups (external, internal, relative)
+- Write self-explanatory code without comments unless absolutely necessary for complex business logic
+- Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`, `canSubmit`)
+- Prefer functional programming patterns over object-oriented approaches
+- Keep files under 300 lines; split when it improves clarity and maintainability
+
+## TypeScript Best Practices
+
+- Use TypeScript for all code with strict mode enabled
+- Prefer interfaces over types for object definitions
+- Avoid enums; use const objects or union types instead
+- Define types in dedicated `types/` directories when shared across components
+- Use proper type annotations and avoid `any` type
+- Leverage Zod for runtime validation and type inference
+- Export types alongside implementations when needed
+
+## Error Handling and Validation
+
+- Implement comprehensive error handling using try-catch blocks
+- Use Zod schemas for input validation on both frontend and backend
+- Return structured error responses with consistent format
+- Log errors with sufficient context for debugging
+- Use toast notifications for user-facing errors (frontend)
+- Validate environment variables at application startup
+
+## Security Practices
+
+- Sanitize all user inputs to prevent XSS attacks
+- Use parameterized queries or ORM methods to prevent SQL injection
+- Validate and escape output when rendering user-provided data
+- Store sensitive configuration in environment variables
+- Use proper CORS configuration for API endpoints
+- Implement rate limiting for API endpoints where appropriate
+
+## Performance Optimization
+
+- Minimize bundle size by importing only what's needed
+- Use dynamic imports for code splitting when beneficial
+- Optimize API calls by avoiding unnecessary requests
+- Implement proper caching strategies (SWR on frontend, memory caching on backend)
+- Use streaming and pagination for large datasets
+- Optimize static assets and use appropriate image formats
+
+## Project Structure
+
+- Follow the established monorepo structure with `web/` and `server/` directories
+- Place shared types in `types/` directories
+- Use meaningful directory names with kebab-case
+- Keep configuration files at appropriate levels (root, web, server)
+- Organize components by feature or domain when applicable
+
+## Version Control
+
+- Write descriptive commit messages following conventional commit format
+- Use feature branches for new functionality
+- Include proper `.gitignore` patterns for each environment
+- Avoid committing sensitive data, build artifacts, or node_modules
+- Keep commits atomic and focused on single changes
+
+## Environment Configuration
+
+- Use `.env` files for environment-specific configuration
+- Provide `.env.example` files with required variables
+- Validate required environment variables at startup
+- Use different configurations for development, staging, and production
+- Never commit actual `.env` files to version control
+
+## Testing Guidelines
+
+- Write tests for critical business logic and API endpoints
+- Use the AAA pattern (Arrange, Act, Assert) with descriptive test names
+- Focus on testing behavior rather than implementation details
+- Mock external dependencies appropriately
+- Ensure tests are deterministic and can run in isolation
+
+## Development Workflow
+
+- Start development servers using `npm run dev` from project root
+- Use the monorepo scripts for building and deployment
+- Run linting and type checking before committing
+- Use hot reloading for efficient development
+- Monitor application logs during development
+
+## Documentation
+
+- Keep README files updated with setup and usage instructions
+- Document API endpoints and their expected inputs/outputs
+- Include examples for complex configurations
+- Document environment variables and their purposes
+- Write inline documentation for complex business logic only when necessary
+# General Cursor Rules - Scheduled Insight Reports
+
+## Code Consistency and Standards
+
+- Follow the existing TypeScript project structure with separate `web/` and `server/` directories
+- Maintain consistency with existing code patterns and practices
+- Keep imports alphabetically sorted within their groups (external, internal, relative)
+- Write self-explanatory code without comments unless absolutely necessary for complex business logic
+- Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`, `canSubmit`)
+- Prefer functional programming patterns over object-oriented approaches
+- Keep files under 300 lines; split when it improves clarity and maintainability
+
+## TypeScript Best Practices
+
+- Use TypeScript for all code with strict mode enabled
+- Prefer interfaces over types for object definitions
+- Avoid enums; use const objects or union types instead
+- Define types in dedicated `types/` directories when shared across components
+- Use proper type annotations and avoid `any` type
+- Leverage Zod for runtime validation and type inference
+- Export types alongside implementations when needed
+
+## Error Handling and Validation
+
+- Implement comprehensive error handling using try-catch blocks
+- Use Zod schemas for input validation on both frontend and backend
+- Return structured error responses with consistent format
+- Log errors with sufficient context for debugging
+- Use toast notifications for user-facing errors (frontend)
+- Validate environment variables at application startup
+
+## Security Practices
+
+- Sanitize all user inputs to prevent XSS attacks
+- Use parameterized queries or ORM methods to prevent SQL injection
+- Validate and escape output when rendering user-provided data
+- Store sensitive configuration in environment variables
+- Use proper CORS configuration for API endpoints
+- Implement rate limiting for API endpoints where appropriate
+
+## Performance Optimization
+
+- Minimize bundle size by importing only what's needed
+- Use dynamic imports for code splitting when beneficial
+- Optimize API calls by avoiding unnecessary requests
+- Implement proper caching strategies (SWR on frontend, memory caching on backend)
+- Use streaming and pagination for large datasets
+- Optimize static assets and use appropriate image formats
+
+## Project Structure
+
+- Follow the established monorepo structure with `web/` and `server/` directories
+- Place shared types in `types/` directories
+- Use meaningful directory names with kebab-case
+- Keep configuration files at appropriate levels (root, web, server)
+- Organize components by feature or domain when applicable
+
+## Version Control
+
+- Write descriptive commit messages following conventional commit format
+- Use feature branches for new functionality
+- Include proper `.gitignore` patterns for each environment
+- Avoid committing sensitive data, build artifacts, or node_modules
+- Keep commits atomic and focused on single changes
+
+## Environment Configuration
+
+- Use `.env` files for environment-specific configuration
+- Provide `.env.example` files with required variables
+- Validate required environment variables at startup
+- Use different configurations for development, staging, and production
+- Never commit actual `.env` files to version control
+
+## Testing Guidelines
+
+- Write tests for critical business logic and API endpoints
+- Use the AAA pattern (Arrange, Act, Assert) with descriptive test names
+- Focus on testing behavior rather than implementation details
+- Mock external dependencies appropriately
+- Ensure tests are deterministic and can run in isolation
+
+## Development Workflow
+
+- Start development servers using `npm run dev` from project root
+- Use the monorepo scripts for building and deployment
+- Run linting and type checking before committing
+- Use hot reloading for efficient development
+- Monitor application logs during development
+
+## Documentation
+
+- Keep README files updated with setup and usage instructions
+- Document API endpoints and their expected inputs/outputs
+- Include examples for complex configurations
+- Document environment variables and their purposes
+- Write inline documentation for complex business logic only when necessary

@@ -1,0 +1,370 @@
+---
+alwaysApply: true
+---
+
+# Frontend Cursor Rules - Next.js Web Application
+
+## Framework and Architecture
+
+- Use Next.js 15 with React 19 and App Router architecture
+- Prefer React Server Components (RSC) over Client Components when possible
+- Minimize use of `"use client"` directive; only use when necessary for interactivity
+- Use functional components with TypeScript interfaces exclusively
+- Leverage Next.js built-in optimizations (Image, Link, etc.)
+
+## Code Style and Structure
+
+- Write concise, technical TypeScript code with accurate examples
+- Use functional and declarative programming patterns; avoid classes
+- Prefer iteration and modularization over code duplication
+- Structure files in this order: imports, types/interfaces, main component, subcomponents, helpers, exports
+- Use the "function" keyword for pure functions and arrow functions for components
+- Keep components focused and single-responsibility
+
+## TypeScript Usage
+
+- Use TypeScript for all code with strict mode enabled
+- Prefer interfaces over types for component props and object definitions
+- Avoid enums; use const objects or union types instead
+- Use proper generic types for reusable components
+- Leverage Zod for form validation and type inference
+- Export types alongside components when they're reusable
+
+## Naming Conventions
+
+- Use PascalCase for component files and names
+- Use kebab-case for directories (e.g., `components/auth-wizard`)
+- Use camelCase for variables, functions, and props
+- Use SCREAMING_SNAKE_CASE for constants
+- Favor named exports over default exports for better tree-shaking
+- Use descriptive names that indicate purpose and state
+
+## Component Patterns
+
+- Use Shadcn/ui components as the foundation for UI elements
+- Wrap client components in Suspense with meaningful fallback UI
+- Use dynamic loading for non-critical or large components
+- Implement proper loading states and error boundaries
+- Create reusable compound components when appropriate
+- Use render props or children patterns for flexible components
+
+## State Management
+
+- Minimize use of `useState` and `useEffect`; prefer RSC when possible
+- Use SWR for server state management and data fetching
+- Implement optimistic updates for better user experience
+- Use React Hook Form with Zod for form state and validation
+- Manage global state at the appropriate level (avoid prop drilling)
+- Use URL state for shareable and bookmarkable UI state
+
+## Styling and UI
+
+- Use Tailwind CSS with a mobile-first approach
+- Follow the Shadcn/ui design system and component patterns
+- Use CSS variables for theme consistency
+- Implement responsive design with appropriate breakpoints
+- Use Framer Motion for animations and transitions
+- Prefer utility classes over custom CSS when possible
+- Use clsx/cn utility for conditional classes
+
+## Performance Optimization
+
+- Optimize images using Next.js Image component with proper sizing
+- Use WebP format and lazy loading for images
+- Implement code splitting with dynamic imports
+- Minimize bundle size by importing only needed parts of libraries
+- Use React.memo() judiciously for expensive components
+- Optimize re-renders by proper dependency management
+
+## Data Fetching
+
+- Use SWR for client-side data fetching with proper error handling
+- Implement proper loading and error states
+- Use revalidation strategies appropriate for data freshness needs
+- Prefer server-side data fetching in RSC when possible
+- Handle race conditions and cancellation properly
+- Cache API responses appropriately
+
+## Form Handling
+
+- Use React Hook Form for form state management
+- Implement Zod schemas for validation
+- Use proper form validation patterns (client + server)
+- Provide immediate feedback for form errors
+- Implement proper accessibility for form elements
+- Use controlled components for complex form logic
+
+## Accessibility
+
+- Use semantic HTML elements appropriately
+- Implement proper ARIA attributes and roles
+- Ensure keyboard navigation works for all interactive elements
+- Provide proper focus management and indicators
+- Use appropriate color contrast and text sizing
+- Test with screen readers and accessibility tools
+
+## Error Handling
+
+- Implement proper error boundaries for React components
+- Use toast notifications (Sonner) for user feedback
+- Handle network errors gracefully with retry mechanisms
+- Provide meaningful error messages to users
+- Log client-side errors for debugging
+- Implement fallback UI for failed components
+
+## Route and Navigation
+
+- Use Next.js App Router file-based routing
+- Implement proper loading UI with loading.tsx files
+- Use Next.js Link component for internal navigation
+- Handle route parameters and search params properly
+- Implement proper SEO with metadata API
+- Use proper redirects and not-found pages
+
+## Environment and Configuration
+
+- Use environment variables for configuration
+- Validate environment variables with Zod schemas
+- Use different configurations for development and production
+- Store API endpoints and keys in environment variables
+- Implement proper environment-specific behavior
+
+## Testing (when implemented)
+
+- Focus on integration tests over unit tests
+- Test user interactions and workflows
+- Mock API calls and external dependencies
+- Test accessibility and keyboard navigation
+- Use React Testing Library best practices
+- Test error states and edge cases
+
+## File Organization
+
+```
+web/
+├── app/                    # Next.js app directory
+│   ├── (routes)/          # Route groups
+│   ├── globals.css        # Global styles
+│   └── layout.tsx         # Root layout
+├── components/            # Reusable components
+│   ├── ui/               # Shadcn/ui components
+│   └── [feature]/        # Feature-specific components
+├── lib/                  # Utilities and configurations
+├── types/                # Type definitions
+└── public/              # Static assets
+```
+
+## Import Organization
+
+```typescript
+// External libraries
+import React from "react"
+import { NextPage } from "next"
+import { motion } from "framer-motion"
+
+// Internal utilities
+import { cn } from "@/lib/utils"
+import { API_BASE } from "@/lib/env"
+
+// Components
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+
+// Types
+import type { ReportConfig } from "@/types/report"
+
+// Relative imports
+import "./styles.css"
+```
+
+## Performance Considerations
+
+- Use Next.js Image optimization for all images
+- Implement proper caching headers for static assets
+- Use React.Suspense for code splitting
+- Minimize JavaScript bundle size
+- Optimize Core Web Vitals (LCP, FID, CLS)
+- Use proper prefetching for critical routes
+# Frontend Cursor Rules - Next.js Web Application
+
+## Framework and Architecture
+
+- Use Next.js 15 with React 19 and App Router architecture
+- Prefer React Server Components (RSC) over Client Components when possible
+- Minimize use of `"use client"` directive; only use when necessary for interactivity
+- Use functional components with TypeScript interfaces exclusively
+- Leverage Next.js built-in optimizations (Image, Link, etc.)
+
+## Code Style and Structure
+
+- Write concise, technical TypeScript code with accurate examples
+- Use functional and declarative programming patterns; avoid classes
+- Prefer iteration and modularization over code duplication
+- Structure files in this order: imports, types/interfaces, main component, subcomponents, helpers, exports
+- Use the "function" keyword for pure functions and arrow functions for components
+- Keep components focused and single-responsibility
+
+## TypeScript Usage
+
+- Use TypeScript for all code with strict mode enabled
+- Prefer interfaces over types for component props and object definitions
+- Avoid enums; use const objects or union types instead
+- Use proper generic types for reusable components
+- Leverage Zod for form validation and type inference
+- Export types alongside components when they're reusable
+
+## Naming Conventions
+
+- Use PascalCase for component files and names
+- Use kebab-case for directories (e.g., `components/auth-wizard`)
+- Use camelCase for variables, functions, and props
+- Use SCREAMING_SNAKE_CASE for constants
+- Favor named exports over default exports for better tree-shaking
+- Use descriptive names that indicate purpose and state
+
+## Component Patterns
+
+- Use Shadcn/ui components as the foundation for UI elements
+- Wrap client components in Suspense with meaningful fallback UI
+- Use dynamic loading for non-critical or large components
+- Implement proper loading states and error boundaries
+- Create reusable compound components when appropriate
+- Use render props or children patterns for flexible components
+
+## State Management
+
+- Minimize use of `useState` and `useEffect`; prefer RSC when possible
+- Use SWR for server state management and data fetching
+- Implement optimistic updates for better user experience
+- Use React Hook Form with Zod for form state and validation
+- Manage global state at the appropriate level (avoid prop drilling)
+- Use URL state for shareable and bookmarkable UI state
+
+## Styling and UI
+
+- Use Tailwind CSS with a mobile-first approach
+- Follow the Shadcn/ui design system and component patterns
+- Use CSS variables for theme consistency
+- Implement responsive design with appropriate breakpoints
+- Use Framer Motion for animations and transitions
+- Prefer utility classes over custom CSS when possible
+- Use clsx/cn utility for conditional classes
+
+## Performance Optimization
+
+- Optimize images using Next.js Image component with proper sizing
+- Use WebP format and lazy loading for images
+- Implement code splitting with dynamic imports
+- Minimize bundle size by importing only needed parts of libraries
+- Use React.memo() judiciously for expensive components
+- Optimize re-renders by proper dependency management
+
+## Data Fetching
+
+- Use SWR for client-side data fetching with proper error handling
+- Implement proper loading and error states
+- Use revalidation strategies appropriate for data freshness needs
+- Prefer server-side data fetching in RSC when possible
+- Handle race conditions and cancellation properly
+- Cache API responses appropriately
+
+## Form Handling
+
+- Use React Hook Form for form state management
+- Implement Zod schemas for validation
+- Use proper form validation patterns (client + server)
+- Provide immediate feedback for form errors
+- Implement proper accessibility for form elements
+- Use controlled components for complex form logic
+
+## Accessibility
+
+- Use semantic HTML elements appropriately
+- Implement proper ARIA attributes and roles
+- Ensure keyboard navigation works for all interactive elements
+- Provide proper focus management and indicators
+- Use appropriate color contrast and text sizing
+- Test with screen readers and accessibility tools
+
+## Error Handling
+
+- Implement proper error boundaries for React components
+- Use toast notifications (Sonner) for user feedback
+- Handle network errors gracefully with retry mechanisms
+- Provide meaningful error messages to users
+- Log client-side errors for debugging
+- Implement fallback UI for failed components
+
+## Route and Navigation
+
+- Use Next.js App Router file-based routing
+- Implement proper loading UI with loading.tsx files
+- Use Next.js Link component for internal navigation
+- Handle route parameters and search params properly
+- Implement proper SEO with metadata API
+- Use proper redirects and not-found pages
+
+## Environment and Configuration
+
+- Use environment variables for configuration
+- Validate environment variables with Zod schemas
+- Use different configurations for development and production
+- Store API endpoints and keys in environment variables
+- Implement proper environment-specific behavior
+
+## Testing (when implemented)
+
+- Focus on integration tests over unit tests
+- Test user interactions and workflows
+- Mock API calls and external dependencies
+- Test accessibility and keyboard navigation
+- Use React Testing Library best practices
+- Test error states and edge cases
+
+## File Organization
+
+```
+web/
+├── app/                    # Next.js app directory
+│   ├── (routes)/          # Route groups
+│   ├── globals.css        # Global styles
+│   └── layout.tsx         # Root layout
+├── components/            # Reusable components
+│   ├── ui/               # Shadcn/ui components
+│   └── [feature]/        # Feature-specific components
+├── lib/                  # Utilities and configurations
+├── types/                # Type definitions
+└── public/              # Static assets
+```
+
+## Import Organization
+
+```typescript
+// External libraries
+import React from "react"
+import { NextPage } from "next"
+import { motion } from "framer-motion"
+
+// Internal utilities
+import { cn } from "@/lib/utils"
+import { API_BASE } from "@/lib/env"
+
+// Components
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+
+// Types
+import type { ReportConfig } from "@/types/report"
+
+// Relative imports
+import "./styles.css"
+```
+
+## Performance Considerations
+
+- Use Next.js Image optimization for all images
+- Implement proper caching headers for static assets
+- Use React.Suspense for code splitting
+- Minimize JavaScript bundle size
+- Optimize Core Web Vitals (LCP, FID, CLS)
+- Use proper prefetching for critical routes

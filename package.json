@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "concurrently \"npm --prefix server run dev\" \"npm --prefix web run dev\"",
     "build": "npm --prefix server run build && npm --prefix web run build",
-    "start": "concurrently \"npm --prefix server run start\" \"npm --prefix web run start\""
+    "start": "concurrently \"npm --prefix server run start\" \"npm --prefix web run start\"",
+    "vercel-build": "npm run build"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

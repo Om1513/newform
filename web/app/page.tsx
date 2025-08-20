@@ -47,8 +47,9 @@ export default function Home() {
       await axios.post(`${API_BASE}/api/run-now`);
       toast.success("Report generation started!");
       mutate();
-    } catch (e: any) {
-      toast.error(String(e?.response?.data?.error ?? "Failed to run"));
+    } catch (e: unknown) {
+      const error = e as { response?: { data?: { error?: string } } };
+      toast.error(String(error?.response?.data?.error ?? "Failed to run"));
     } finally {
       setRunning(false);
     }

@@ -1,51 +1,74 @@
-import "dotenv/config";  // <-- keep this on the first line
-
-import express, { type Request, type Response } from "express";
+import express from "express";
 import cors from "cors";
-import axios from "axios";
 import path from "path";
-import fs from "fs";
 import router from "./routes";
-
+import { reschedule } from "./scheduler";
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 4000;
+
+// CORS configuration for Vercel deployment
+app.use(cors({
+  origin: process.env.VERCEL_URL 
+    ? [`https://${process.env.VERCEL_URL}`, 'https://vercel.app']
+    : ['http://localhost:3000'],
+  credentials: true
+}));
+
 app.use(express.json());
 
-const PORT = Number(process.env.SERVER_PORT ?? 4000);
-const NEWFORM_API_BASE = process.env.NEWFORM_API_BASE ?? "https://bizdev.newform.ai";
-const NEWFORM_API_TOKEN = process.env.NEWFORM_API_TOKEN ?? "NEWFORMCODINGCHALLENGE";
-const NEWFORM_AUTH_HEADER_NAME = process.env.NEWFORM_AUTH_HEADER_NAME ?? "Authorization";
-
-// Static dir for public reports
-const REPORT_DIR = path.resolve(process.cwd(), "reports");
-if (!fs.existsSync(REPORT_DIR)) fs.mkdirSync(REPORT_DIR, { recursive: true });
-app.use("/reports", express.static(REPORT_DIR));
-
+// API routes
 app.use("/api", router);
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+// Serve static files (reports)
+app.use("/reports", express.static(path.join(process.cwd(), "reports")));
 
-// Example proxy: POST /proxy/meta or /proxy/tiktok
-app.post("/proxy/:platform", async (req, res) => {
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Proxy endpoint for external API calls
+app.post("/api/proxy/:platform", async (req, res) => {
   const { platform } = req.params;
-  const url = `${NEWFORM_API_BASE}/sample-data/${platform}`;
+  const { NEWFORM_API_TOKEN, NEWFORM_AUTH_HEADER_NAME, NEWFORM_BASE_URL } = process.env;
+  
+  if (!NEWFORM_API_TOKEN || !NEWFORM_AUTH_HEADER_NAME || !NEWFORM_BASE_URL) {
+    return res.status(500).json({ error: "API configuration missing" });
+  }
 
   try {
-    const r = await axios.post(url, req.body, {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    const response = await fetch(`${NEWFORM_BASE_URL}/sample-data/${platform}`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         [NEWFORM_AUTH_HEADER_NAME]: NEWFORM_API_TOKEN
       },
-      timeout: 30_000
+      body: JSON.stringify(req.body),
+      signal: controller.signal
     });
-    res.status(r.status).json(r.data);
-  } catch (err: any) {
-    const status = err?.response?.status ?? 500;
-    res.status(status).json({ error: err?.response?.data ?? err?.message ?? "Unknown error" });
+    
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error: any) {
+    console.error(`Proxy error for ${platform}:`, error);
+    res.status(500).json({ error: error.message });
   }
 });
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📊 API available at http://localhost:${PORT}/api`);
+  console.log(`📁 Reports available at http://localhost:${PORT}/reports`);
+  
+  // Initialize scheduler
+  reschedule();
 });
+
+export default app;

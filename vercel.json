@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/src/index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["server/src/**"]
+      }
+    },
+    {
+      "src": "web/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server/src/index.ts"
+    },
+    {
+      "src": "/reports/(.*)",
+      "dest": "/server/src/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/web/$1"
+    }
+  ],
+  "functions": {
+    "server/src/index.ts": {
+      "maxDuration": 60
+    }
+  }
+}

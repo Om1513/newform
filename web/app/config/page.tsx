@@ -112,11 +112,12 @@ export default function ConfigurePage() {
         email: values.delivery === "email" ? values.email : undefined
       });
       toast.success("Saved and ready to schedule");
-    } catch (e: any) {
-      const msg =
-        e?.response?.data?.error?.message ??
-        e?.response?.data?.error ??
-        "Failed to save";
+    } catch (e: unknown) {
+      const error = e as { response?: { data?: { error?: string | { message?: string } } } };
+      const errorData = error?.response?.data?.error;
+      const msg = typeof errorData === 'object' && errorData?.message 
+        ? errorData.message 
+        : errorData ?? "Failed to save";
       toast.error(String(msg));
     } finally {
       setLoading(false);

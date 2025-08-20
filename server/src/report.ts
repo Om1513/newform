@@ -51,6 +51,7 @@ export async function runReport(): Promise<{ url?: string; pdfUrl?: string | nul
   const payload = buildPayload(cfg);
   const url = `${NEWFORM_API_BASE}/sample-data/${cfg.platform}`;
 
+
   const resp = await axios.post(url, payload, {
     headers: {
       "Content-Type": "application/json",
@@ -59,6 +60,7 @@ export async function runReport(): Promise<{ url?: string; pdfUrl?: string | nul
     timeout: 30_000,
     validateStatus: () => true,
   });
+  
   
   if (resp.status < 200 || resp.status >= 300) {
     const body = typeof resp.data === "string" ? resp.data : JSON.stringify(resp.data);
@@ -69,6 +71,7 @@ export async function runReport(): Promise<{ url?: string; pdfUrl?: string | nul
 
   // 2) Enhanced data analysis
   const analysis = await analyzeData(rows, cfg);
+
 
   // 3) Generate multiple charts based on analysis
   const charts = await generateCharts(analysis, cfg);
@@ -110,8 +113,10 @@ export async function runReport(): Promise<{ url?: string; pdfUrl?: string | nul
     // Don't fail the entire report generation if PDF fails
   }
   
-  store.status.latestPublicUrl = htmlUrl;
-  store.status.latestPdfUrl = pdfUrl;
+  store.updateStatus({
+    latestPublicUrl: htmlUrl,
+    latestPdfUrl: pdfUrl
+  });
 
   if (cfg.delivery === "email") {
     console.log('Email delivery requested...');
@@ -181,13 +186,13 @@ export async function runReport(): Promise<{ url?: string; pdfUrl?: string | nul
  */
 export function buildPayload(cfg: ReportConfig) {
   if (cfg.platform === "tiktok") {
-    // TikTok per spec
+    // TikTok per spec - using lowercase dateRangeEnum as per API documentation
     return {
-      metrics: cfg.metrics,          // array (allowed list)
-      dimensions: ["stat_time_day"], // valid example dimension
-      level: cfg.level,              // "AUCTION_ADVERTISER" | "AUCTION_AD" | "AUCTION_CAMPAIGN"
-      dateRangeEnum: cfg.dateRangeEnum, // lower-case per working tests
-      // reportType omitted intentionally
+      metrics: cfg.metrics,                    // array (allowed list)
+      dimensions: ["stat_time_day"],           // valid dimension for time series
+      level: cfg.level,                        // "AUCTION_ADVERTISER" | "AUCTION_AD" | "AUCTION_CAMPAIGN"
+      dateRangeEnum: cfg.dateRangeEnum,        // use lowercase: "last7", "last14", "last30"
+      reportType: "BASIC"                      // explicitly set report type
     };
   }
   // Meta per spec
@@ -202,18 +207,53 @@ export function buildPayload(cfg: ReportConfig) {
 
 /** Extract rows robustly from unknown sample payload shapes */
 export function extractRows(data: any): AnyRow[] {
-  if (!data) return [];
-  if (Array.isArray(data)) return data as AnyRow[];
-  if (Array.isArray(data.rows)) return data.rows as AnyRow[];
-  if (Array.isArray(data.data)) return data.data as AnyRow[];
-  if (Array.isArray(data.results)) return data.results as AnyRow[];
+  console.log("Extracting rows from data:", JSON.stringify(data, null, 2));
+  
+  if (!data) {
+    console.log("No data provided");
+    return [];
+  }
+  
+  if (Array.isArray(data)) {
+    console.log(`Found array with ${data.length} items`);
+    return data as AnyRow[];
+  }
+  
+  if (Array.isArray(data.rows)) {
+    console.log(`Found data.rows with ${data.rows.length} items`);
+    return data.rows as AnyRow[];
+  }
+  
+  if (Array.isArray(data.data)) {
+    console.log(`Found data.data with ${data.data.length} items`);
+    return data.data as AnyRow[];
+  }
+  
+  if (Array.isArray(data.results)) {
+    console.log(`Found data.results with ${data.results.length} items`);
+    return data.results as AnyRow[];
+  }
+  
+  if (Array.isArray(data.list)) {
+    console.log(`Found data.list with ${data.list.length} items`);
+    return data.list as AnyRow[];
+  }
+  
   // Try single object
-  if (typeof data === "object") return [data as AnyRow];
+  if (typeof data === "object" && data !== null) {
+    console.log("Treating as single object");
+    return [data as AnyRow];
+  }
+  
+  console.log("No recognizable data structure found");
   return [];
 }
 
 /** Enhanced data analysis with trends and insights */
 async function analyzeData(rows: AnyRow[], config: ReportConfig): Promise<DataAnalysis> {
+  console.log(`Analyzing ${rows.length} rows for ${config.platform} with metrics:`, config.metrics);
+  console.log(`Sample row structure:`, JSON.stringify(rows[0], null, 2));
+  
   // Basic totals
   const totals: Record<string, number> = {};
   for (const metric of config.metrics) {
@@ -225,12 +265,24 @@ async function analyzeData(rows: AnyRow[], config: ReportConfig): Promise<DataAn
   
   for (const row of rows) {
     for (const metric of config.metrics) {
-      const val = Number(row[metric]);
+      // Handle different data structures for Meta vs TikTok
+      let val: number;
+      let dateField: string | undefined;
+      
+      if (row.metrics && row.dimensions) {
+        // TikTok structure: { dimensions: { stat_time_day: "..." }, metrics: { metric: "value" } }
+        val = Number(row.metrics[metric]);
+        dateField = row.dimensions.stat_time_day;
+      } else {
+        // Meta structure: { metric: "value", date_start: "..." }
+        val = Number(row[metric]);
+        dateField = row.stat_time_day || row.date_start || row.date;
+      }
+      
       if (!Number.isNaN(val)) {
         totals[metric] += val;
         
         // Track time series if date available
-        const dateField = row.stat_time_day || row.date_start || row.date;
         if (dateField) {
           if (!timeSeriesData[metric]) timeSeriesData[metric] = [];
           timeSeriesData[metric].push({ date: dateField, value: val });
@@ -444,6 +496,8 @@ function enhanceHtmlForPDF(html: string): string {
           page-break-inside: avoid;
           margin: 20px 0 !important;
           background: #FAFBFC !important;
+          border-radius: 12px !important;
+          border-left: 4px solid #3B82F6 !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
@@ -477,9 +531,11 @@ function enhanceHtmlForPDF(html: string): string {
         
         /* Text content formatting for PDF */
         .text-content {
-          white-space: pre-line !important;
+          white-space: normal !important;
           line-height: 1.6 !important;
-          padding: 20px !important;
+          padding: 16px !important;
+          background: white !important;
+          border-radius: 8px !important;
         }
         
         .text-content strong {
@@ -494,8 +550,13 @@ function enhanceHtmlForPDF(html: string): string {
         
         .text-content li {
           display: list-item !important;
-          margin: 0 !important;
+          margin-bottom: 12px !important;
           padding: 0 !important;
+          line-height: 1.5 !important;
+        }
+        
+        .text-content li:last-child {
+          margin-bottom: 0 !important;
         }
         
         /* Page breaks */
@@ -556,12 +617,24 @@ function enhanceHtmlForPDF(html: string): string {
 function aggregateTotals(rows: AnyRow[], metrics: string[]) {
   const totals: Record<string, number> = {};
   for (const m of metrics) totals[m] = 0;
+  
   for (const row of rows) {
     for (const m of metrics) {
-      const val = Number(row[m]);
+      // Handle different data structures for Meta vs TikTok
+      let val: number;
+      
+      if (row.metrics && row.dimensions) {
+        // TikTok structure: { dimensions: { stat_time_day: "..." }, metrics: { metric: "value" } }
+        val = Number(row.metrics[m]);
+      } else {
+        // Meta structure: { metric: "value", date_start: "..." }
+        val = Number(row[m]);
+      }
+      
       if (!Number.isNaN(val)) totals[m] += val;
     }
   }
+  
   // Round to 2 decimals
   for (const m of metrics) totals[m] = Math.round((totals[m] + Number.EPSILON) * 100) / 100;
   return totals;
@@ -1112,10 +1185,10 @@ async function renderEnhancedHtml(params: {
     }
     .text-content {
       background: white;
-      padding: 0px;
+      padding: 16px;
       border-radius: 8px;
-      line-height: 1.7;
-      white-space: pre-line;
+      line-height: 1.6;
+      white-space: normal;
     }
     .text-content strong {
       color: #1F2937;
@@ -1130,6 +1203,11 @@ async function renderEnhancedHtml(params: {
     }
     .text-content li {
       display: list-item;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .text-content li:last-child {
+      margin-bottom: 0;
     }
     .metrics-grid {
       display: grid;

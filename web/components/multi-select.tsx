@@ -46,16 +46,24 @@ export function MultiSelect({
                     className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
                   >
                     {item.label}
-                    <button
-                      type="button"
+                    <span
                       onClick={(e) => {
                         e.stopPropagation();
                         removeItem(item.value);
                       }}
-                      className="hover:bg-blue-200 rounded-full p-0.5"
+                      className="hover:bg-blue-200 rounded-full p-0.5 cursor-pointer"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removeItem(item.value);
+                        }
+                      }}
                     >
                       <X className="w-3 h-3" />
-                    </button>
+                    </span>
                   </motion.span>
                 ))
               ) : (

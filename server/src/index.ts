@@ -35,7 +35,7 @@ app.post("/proxy/:platform", async (req, res) => {
     const r = await axios.post(url, req.body, {
       headers: {
         "Content-Type": "application/json",
-        [NEWFORM_AUTH_HEADER_NAME]: `Bearer ${NEWFORM_API_TOKEN}`
+        [NEWFORM_AUTH_HEADER_NAME]: NEWFORM_API_TOKEN
       },
       timeout: 30_000
     });

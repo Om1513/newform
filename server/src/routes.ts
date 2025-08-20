@@ -29,11 +29,16 @@ router.post("/config", (req, res) => {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
   const data = parsed.data as ReportConfig;
-  store.config = { ...data, email: data.delivery === "email" ? data.email! : null };
+  const config = { ...data, email: data.delivery === "email" ? data.email! : null };
+  
+  // Update config with persistence
+  store.updateConfig(config);
 
   // Reset status and reschedule
-  store.status.lastError = null;
-  store.status.nextRunAt = data.cadence === "manual" ? null : computeNextRunISO(data.cadence);
+  store.updateStatus({
+    lastError: null,
+    nextRunAt: data.cadence === "manual" ? null : computeNextRunISO(data.cadence)
+  });
   reschedule();
   res.json({ ok: true, config: store.config });
 });
@@ -42,13 +47,16 @@ router.post("/run-now", async (_req, res) => {
   if (!store.config) return res.status(400).json({ error: "No config saved" });
   try {
     const result = await runReport();
-    store.status.lastRunAt = new Date().toISOString();
-    store.status.lastError = null;
-    // refresh next run estimate
-    store.status.nextRunAt = computeNextRunISO(store.config.cadence);
+    store.updateStatus({
+      lastRunAt: new Date().toISOString(),
+      lastError: null,
+      nextRunAt: computeNextRunISO(store.config.cadence)
+    });
     return res.json({ ok: true, lastRunAt: store.status.lastRunAt, ...result });
   } catch (err: any) {
-    store.status.lastError = String(err?.message ?? err);
+    store.updateStatus({
+      lastError: String(err?.message ?? err)
+    });
     return res.status(500).json({ error: store.status.lastError });
   }
 });

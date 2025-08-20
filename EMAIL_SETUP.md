@@ -100,3 +100,4 @@ If you continue to have issues:
 2. Verify your Resend account status and credits
 3. Test with a simple email first using Resend's API directly
 4. Ensure all environment variables are properly set and the server is restarted
+

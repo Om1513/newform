@@ -18,6 +18,7 @@ export interface RunStatus {
   nextRunAt?: string | null;
   lastError?: string | null;
   latestPublicUrl?: string | null;
+  latestPdfUrl?: string | null;
 }
 
 export const store = {
@@ -26,6 +27,7 @@ export const store = {
     lastRunAt: null,
     nextRunAt: null,
     lastError: null,
-    latestPublicUrl: null
+    latestPublicUrl: null,
+    latestPdfUrl: null
   } as RunStatus
 };

@@ -3,6 +3,7 @@ import path from "path";
 import axios from "axios";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import { ChartConfiguration } from "chart.js";
+import puppeteer from "puppeteer";
 import { store, ReportConfig } from "./store";
 import OpenAI from "openai";
 import { Resend } from "resend";
@@ -42,7 +43,7 @@ interface ChartType {
 }
 
 /** Build and deliver one report, updating store.status */
-export async function runReport(): Promise<{ url?: string; emailed?: boolean }> {
+export async function runReport(): Promise<{ url?: string; pdfUrl?: string | null; emailed?: boolean }> {
   if (!store.config) throw new Error("No config saved");
   const cfg = store.config;
 
@@ -86,26 +87,91 @@ export async function runReport(): Promise<{ url?: string; emailed?: boolean }> 
 
   // 6) Save and deliver
   ensureDir(REPORT_DIR);
-  const filename = `report-${Date.now()}.html`;
-  const fpath = path.join(REPORT_DIR, filename);
-  fs.writeFileSync(fpath, html, "utf8");
-  const publicUrl = `${SERVER_PUBLIC_BASE}/reports/${filename}`;
-  store.status.latestPublicUrl = publicUrl;
+  const timestamp = Date.now();
+  const htmlFilename = `report-${timestamp}.html`;
+  const pdfFilename = `report-${timestamp}.pdf`;
+  const htmlPath = path.join(REPORT_DIR, htmlFilename);
+  const pdfPath = path.join(REPORT_DIR, pdfFilename);
+  
+  // Save HTML version
+  fs.writeFileSync(htmlPath, html, "utf8");
+  
+  const htmlUrl = `${SERVER_PUBLIC_BASE}/reports/${htmlFilename}`;
+  let pdfUrl: string | null = null;
+  
+  // Generate PDF version with proper styling (with fallback)
+  try {
+    const pdfBuffer = await generatePDF(html);
+    fs.writeFileSync(pdfPath, pdfBuffer);
+    pdfUrl = `${SERVER_PUBLIC_BASE}/reports/${pdfFilename}`;
+    console.log('PDF generated successfully:', pdfFilename);
+  } catch (error) {
+    console.error('PDF generation failed, continuing with HTML only:', error);
+    // Don't fail the entire report generation if PDF fails
+  }
+  
+  store.status.latestPublicUrl = htmlUrl;
+  store.status.latestPdfUrl = pdfUrl;
 
   if (cfg.delivery === "email") {
+    console.log('Email delivery requested...');
+    
+    const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.RESEND_FROM;
-    if (!from) throw new Error("RESEND_FROM not set");
-    if (!cfg.email) throw new Error("Email not provided in config");
-    await resend.emails.send({
-      from,
-      to: [cfg.email],
-      subject: `📊 ${cfg.platform.toUpperCase()} Insight Report - ${new Date().toLocaleDateString()}`,
-      html
+    
+    console.log('Environment check:', {
+      hasApiKey: !!apiKey,
+      hasFrom: !!from,
+      emailAddress: cfg.email
     });
-    return { url: publicUrl, emailed: true };
+    
+    if (!apiKey) {
+      console.error("RESEND_API_KEY environment variable not set");
+      throw new Error("RESEND_API_KEY not set. Please configure your Resend API key.");
+    }
+    
+    if (!from) {
+      console.error("RESEND_FROM environment variable not set");
+      throw new Error("RESEND_FROM not set. Please configure your sender email address.");
+    }
+    
+    if (!cfg.email) {
+      console.error("No email address provided in config");
+      throw new Error("Email not provided in config");
+    }
+    
+    try {
+      // Send email with HTML body and PDF attachment (if available)
+      const emailOptions: any = {
+        from,
+        to: [cfg.email],
+        subject: `📊 ${cfg.platform.toUpperCase()} Insight Report - ${new Date().toLocaleDateString()}`,
+        html
+      };
+
+      // Add PDF attachment only if PDF was successfully generated
+      if (pdfUrl && fs.existsSync(pdfPath)) {
+        console.log('Adding PDF attachment to email...');
+        emailOptions.attachments = [
+          {
+            filename: `${cfg.platform}-insight-report-${new Date().toISOString().split('T')[0]}.pdf`,
+            content: fs.readFileSync(pdfPath)
+          }
+        ];
+      }
+
+      console.log('Sending email to:', cfg.email);
+      const result = await resend.emails.send(emailOptions);
+      console.log('Email sent successfully:', result);
+      
+      return { url: htmlUrl, pdfUrl, emailed: true };
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
-  return { url: publicUrl };
+  return { url: htmlUrl, pdfUrl };
 }
 
 /** Build payloads that exactly follow the challenge spec:
@@ -273,6 +339,218 @@ function formatNumber(num: number): string {
   } else {
     return num.toFixed(2);
   }
+}
+
+/** Generate PDF from HTML with optimized styling for print */
+async function generatePDF(html: string): Promise<Buffer> {
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
+    });
+
+    const page = await browser.newPage();
+    
+    // Set viewport for consistent rendering
+    await page.setViewport({
+      width: 1200,
+      height: 800,
+      deviceScaleFactor: 2
+    });
+
+    // Enhance HTML for PDF with print-specific styles
+    const pdfOptimizedHtml = enhanceHtmlForPDF(html);
+    
+    // Set content and wait for images to load
+    await page.setContent(pdfOptimizedHtml, {
+      waitUntil: ['networkidle0', 'load']
+    });
+
+    // Generate PDF with professional settings
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm'
+      },
+      displayHeaderFooter: true,
+      headerTemplate: `
+        <div style="font-size: 10px; color: #666; width: 100%; text-align: center; margin-top: 10px;">
+          <span style="font-weight: 600;">Scheduled Insight Reports</span>
+        </div>
+      `,
+      footerTemplate: `
+        <div style="font-size: 9px; color: #666; width: 100%; display: flex; justify-content: space-between; margin: 0 15mm;">
+          <span>Generated on ${new Date().toLocaleDateString()}</span>
+          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+        </div>
+      `,
+      preferCSSPageSize: false
+    });
+
+    return Buffer.from(pdfBuffer);
+  } catch (error) {
+    console.error('PDF generation failed:', error);
+    throw new Error('Failed to generate PDF report');
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+}
+
+/** Enhance HTML with PDF-specific optimizations */
+function enhanceHtmlForPDF(html: string): string {
+  // Add print-specific CSS and optimize for PDF rendering
+  const pdfStyles = `
+    <style>
+      /* PDF-specific styles */
+      @media print {
+        body {
+          background: white !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        
+        .container {
+          box-shadow: none !important;
+          border-radius: 0 !important;
+          margin: 0 !important;
+          max-width: none !important;
+        }
+        
+        .header {
+          background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%) !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          page-break-inside: avoid;
+        }
+        
+        .section {
+          page-break-inside: avoid;
+          margin: 20px 0 !important;
+          background: #FAFBFC !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        
+        /* Ensure charts render properly */
+        img {
+          max-width: 100% !important;
+          height: auto !important;
+          page-break-inside: avoid;
+        }
+        
+        /* Table styling for PDF */
+        table {
+          page-break-inside: avoid;
+          border-collapse: collapse !important;
+        }
+        
+        thead {
+          display: table-header-group;
+        }
+        
+        tr {
+          page-break-inside: avoid;
+        }
+        
+        /* Optimize font sizes for print */
+        h1 { font-size: 24px !important; }
+        h2 { font-size: 18px !important; }
+        h3 { font-size: 16px !important; }
+        p, li, td { font-size: 12px !important; line-height: 1.4 !important; }
+        
+        /* Text content formatting for PDF */
+        .text-content {
+          white-space: pre-line !important;
+          line-height: 1.6 !important;
+          padding: 20px !important;
+        }
+        
+        .text-content strong {
+          font-weight: 700 !important;
+          color: #000 !important;
+        }
+        
+        .text-content ul {
+          margin: 0 !important;
+          padding-left: 20px !important;
+        }
+        
+        .text-content li {
+          display: list-item !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
+        /* Page breaks */
+        .page-break {
+          page-break-before: always;
+        }
+        
+        /* Ensure proper spacing */
+        .content {
+          padding: 15px !important;
+        }
+        
+        /* Chart containers */
+        div[style*="margin: 32px 0"] {
+          margin: 20px 0 !important;
+          page-break-inside: avoid;
+        }
+      }
+      
+      /* Force color printing */
+      * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      /* Optimize for PDF rendering */
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        background: white;
+      }
+      
+      /* Ensure proper chart rendering */
+      img[src^="data:image"] {
+        display: block;
+        margin: 10px auto;
+        max-width: 90%;
+        height: auto;
+      }
+    </style>
+  `;
+  
+  // Insert PDF styles right after the existing styles
+  const styleEndIndex = html.indexOf('</style>') + 8;
+  if (styleEndIndex > 7) {
+    return html.slice(0, styleEndIndex) + pdfStyles + html.slice(styleEndIndex);
+  } else {
+    // If no existing styles found, add after head
+    const headEndIndex = html.indexOf('</head>');
+    if (headEndIndex > -1) {
+      return html.slice(0, headEndIndex) + pdfStyles + html.slice(headEndIndex);
+    }
+  }
+  
+  return html;
 }
 
 function aggregateTotals(rows: AnyRow[], metrics: string[]) {
@@ -587,32 +865,44 @@ function parseAIResponse(response: string) {
   const sections: any = {};
   
   // Extract executive summary
-  const execMatch = response.match(/EXECUTIVE SUMMARY[:\s]*(.*?)(?=\n\d\.|$)/s);
+  const execMatch = response.match(/(?:EXECUTIVE SUMMARY|1\.\s*EXECUTIVE SUMMARY)[:\s]*(.*?)(?=(?:\n\s*(?:\d+\.|##)|$))/si);
   if (execMatch) {
-    sections.executiveSummary = execMatch[1].trim();
+    sections.executiveSummary = cleanupText(execMatch[1]);
   }
   
   // Extract key insights
-  const insightsMatch = response.match(/KEY INSIGHTS[:\s]*(.*?)(?=\n\d\.|$)/s);
+  const insightsMatch = response.match(/(?:KEY INSIGHTS|2\.\s*KEY INSIGHTS)[:\s]*(.*?)(?=(?:\n\s*(?:\d+\.|##)|$))/si);
   if (insightsMatch) {
-    sections.keyInsights = insightsMatch[1]
-      .split('\n')
-      .filter(line => line.trim().startsWith('-') || line.trim().startsWith('•'))
-      .map(line => line.replace(/^[-•]\s*/, '').trim())
-      .filter(Boolean);
+    sections.keyInsights = extractBulletPoints(insightsMatch[1]);
   }
   
   // Extract recommendations
-  const recoMatch = response.match(/ACTIONABLE RECOMMENDATIONS[:\s]*(.*?)(?=\n\d\.|$)/s);
+  const recoMatch = response.match(/(?:ACTIONABLE RECOMMENDATIONS|3\.\s*ACTIONABLE RECOMMENDATIONS)[:\s]*(.*?)(?=(?:\n\s*(?:\d+\.|##)|$))/si);
   if (recoMatch) {
-    sections.recommendations = recoMatch[1]
-      .split('\n')
-      .filter(line => line.trim().startsWith('-') || line.trim().startsWith('•'))
-      .map(line => line.replace(/^[-•]\s*/, '').trim())
-      .filter(Boolean);
+    sections.recommendations = extractBulletPoints(recoMatch[1]);
   }
   
   return sections;
+}
+
+/** Clean up text content */
+function cleanupText(text: string): string {
+  return text
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\n{2,}/g, '\n\n')
+    .replace(/^\s*[-•]\s*/, ''); // Remove leading bullet points
+}
+
+/** Extract bullet points from text */
+function extractBulletPoints(text: string): string[] {
+  return text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .filter(line => line.startsWith('-') || line.startsWith('•') || line.startsWith('*') || /^\d+\./.test(line))
+    .map(line => line.replace(/^[-•*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+    .filter(Boolean);
 }
 
 /** Generate default recommendations based on data analysis */
@@ -767,15 +1057,15 @@ async function renderEnhancedHtml(params: {
   // Prepare insights and recommendations
   const insightsHtml = (aiAnalysis.keyInsights || [])
     .map((insight: string) => `
-      <li style="margin: 8px 0; color: #374151; line-height: 1.6;">
-        ${escapeHtml(insight)}
+      <li>
+        ${formatTextWithLineBreaks(insight)}
       </li>
     `).join('');
 
   const recommendationsHtml = (aiAnalysis.recommendations || [])
     .map((rec: string) => `
-      <li style="margin: 8px 0; color: #374151; line-height: 1.6;">
-        ${escapeHtml(rec)}
+      <li>
+        ${formatTextWithLineBreaks(rec)}
       </li>
     `).join('');
 
@@ -818,6 +1108,28 @@ async function renderEnhancedHtml(params: {
       background: #FAFBFC;
       border-radius: 12px;
       border-left: 4px solid #3B82F6;
+      page-break-inside: avoid;
+    }
+    .text-content {
+      background: white;
+      padding: 0px;
+      border-radius: 8px;
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+    .text-content strong {
+      color: #1F2937;
+      font-weight: 600;
+    }
+    .text-content p {
+      margin: 0 0 16px 0;
+    }
+    .text-content ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .text-content li {
+      display: list-item;
     }
     .metrics-grid {
       display: grid;
@@ -868,8 +1180,8 @@ async function renderEnhancedHtml(params: {
         <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 20px; font-weight: 700;">
           📋 Executive Summary
         </h2>
-        <div style="background: white; padding: 20px; border-radius: 8px; line-height: 1.7;">
-          ${escapeHtml(aiAnalysis.executiveSummary)}
+        <div class="text-content">
+          ${formatTextWithLineBreaks(aiAnalysis.executiveSummary)}
         </div>
       </div>
 
@@ -907,8 +1219,8 @@ async function renderEnhancedHtml(params: {
         <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 20px; font-weight: 700;">
           💡 Key Insights
         </h2>
-        <div style="background: white; padding: 20px; border-radius: 8px;">
-          <ul style="margin: 0; padding-left: 20px;">
+        <div class="text-content">
+          <ul>
             ${insightsHtml}
           </ul>
         </div>
@@ -919,8 +1231,8 @@ async function renderEnhancedHtml(params: {
         <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 20px; font-weight: 700;">
           🎯 Actionable Recommendations
         </h2>
-        <div style="background: white; padding: 20px; border-radius: 8px;">
-          <ul style="margin: 0; padding-left: 20px;">
+        <div class="text-content">
+          <ul>
             ${recommendationsHtml}
           </ul>
         </div>
@@ -971,6 +1283,35 @@ function ensureDir(dir: string) {
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}
+
+/** Format text with proper line breaks and structure for HTML */
+function formatTextWithLineBreaks(text: string): string {
+  if (!text) return '';
+  
+  // Escape HTML first
+  let formatted = escapeHtml(text);
+  
+  // Handle common patterns that need line breaks
+  formatted = formatted
+    // Break on numbered sections (## 1., ## 2., etc.)
+    .replace(/##\s*(\d+)\.\s*/g, '\n\n<strong>$1.</strong> ')
+    // Break on bullet points with ** formatting
+    .replace(/\*\*([^*]+)\*\*:/g, '\n\n<strong>$1:</strong>')
+    // Break on sections like "KEY INSIGHTS", "ACTIONABLE RECOMMENDATIONS"
+    .replace(/(KEY INSIGHTS|ACTIONABLE RECOMMENDATIONS|EXECUTIVE SUMMARY)/g, '\n\n<strong>$1</strong>\n')
+    // Break on dash bullet points
+    .replace(/\s*-\s*\*\*([^*]+)\*\*:/g, '\n\n• <strong>$1:</strong>')
+    // Convert remaining ** to <strong> tags
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    // Break on sentences ending with periods followed by capital letters
+    .replace(/\.\s+([A-Z])/g, '.\n\n$1')
+    // Clean up multiple line breaks
+    .replace(/\n{3,}/g, '\n\n')
+    // Trim whitespace
+    .trim();
+  
+  return formatted;
 }
 
 /** Helper to compute next run timestamp from cadence (simple) */

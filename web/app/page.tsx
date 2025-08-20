@@ -287,15 +287,31 @@ export default function Home() {
                             <span className="text-sm text-slate-800 capitalize">{config.dateRangeEnum}</span>
                           </div>
                           {status.latestPublicUrl && (
-                            <a 
-                              href={status.latestPublicUrl} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                              View Latest Report
-                            </a>
+                            <div className="space-y-2">
+                              <a 
+                                href={status.latestPublicUrl} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                                View Latest Report (HTML)
+                              </a>
+                              {status.latestPdfUrl && (
+                                <a 
+                                  href={status.latestPdfUrl} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 text-sm text-green-600 hover:text-green-700 font-medium transition-colors ml-4"
+                                  download
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  Download PDF
+                                </a>
+                              )}
+                            </div>
                           )}
                         </CardContent>
                       </Card>

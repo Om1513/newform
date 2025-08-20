@@ -12,7 +12,7 @@ export const PLATFORM_OPTIONS = [
   export const CADENCE_OPTIONS = [
     { label: "Manual", value: "manual" },
     { label: "Hourly", value: "hourly" },
-    { label: "Every 12 hours", value: "every12h" },
+    { label: "Every 12 hours", value: "every 12 hours" },
     { label: "Daily", value: "daily" }
   ] as const;
   
@@ -22,15 +22,17 @@ export const PLATFORM_OPTIONS = [
   ] as const;
   
   export const META_METRICS = [
-    "spend","impressions","clicks","ctr","conversions",
-    "cost_per_conversion","reach","frequency"
+    "spend","impressions","clicks","ctr","cpc","reach","frequency",
+    "conversions","cost_per_conversion","conversion_rate","actions",
+    "cost_per_action_type"
   ];
   
   export const META_LEVELS = ["account","campaign","adset","ad"];
   
   export const TIKTOK_METRICS = [
     "spend","impressions","clicks","conversions","cost_per_conversion",
-    "conversion_rate","ctr","cpc","reach","frequency"
+    "conversion_rate","ctr","cpc","reach","frequency","skan_app_install",
+    "skan_cost_per_app_install","skan_purchase","skan_cost_per_purchase"
   ];
   
   export const TIKTOK_LEVELS = ["AUCTION_ADVERTISER","AUCTION_AD","AUCTION_CAMPAIGN"];

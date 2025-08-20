@@ -1,6 +1,6 @@
 export type Platform = "meta" | "tiktok";
 export type DateRangeEnum = "last7" | "last14" | "last30";
-export type Cadence = "manual" | "hourly" | "every12h" | "daily";
+export type Cadence = "manual" | "hourly" | "every 12 hours" | "daily";
 export type Delivery = "email" | "link";
 
 export interface ReportConfig {

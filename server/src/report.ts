@@ -282,7 +282,7 @@ export function computeNextRunISO(cadence: ReportConfig["cadence"]) {
   const now = Date.now();
   const ms =
     cadence === "hourly" ? 60 * 60 * 1000 :
-    cadence === "every12h" ? 12 * 60 * 60 * 1000 :
+    cadence === "every 12 hours" ? 12 * 60 * 60 * 1000 :
     cadence === "daily" ? 24 * 60 * 60 * 1000 :
     0;
   return ms ? new Date(now + ms).toISOString() : null;

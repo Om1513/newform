@@ -11,7 +11,7 @@ const ConfigSchema = z.object({
   metrics: z.array(z.string()).min(1),
   level: z.string().min(1),
   dateRangeEnum: z.enum(["last7", "last14", "last30"]),
-  cadence: z.enum(["manual", "hourly", "every12h", "daily"]),
+  cadence: z.enum(["manual", "hourly", "every 12 hours", "daily"]),
   delivery: z.enum(["email", "link"]),
   email: z.string().email().optional().or(z.literal("").transform(() => undefined))
 }).refine(v => v.delivery === "email" ? !!v.email : true, {

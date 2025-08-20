@@ -7,6 +7,8 @@ import * as z from "zod";
 import axios from "axios";
 import { toast } from "sonner";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowLeft, Loader2, Save, Settings } from "lucide-react";
 
 import { API_BASE } from "@/lib/env";
 import { Button } from "@/components/ui/button";
@@ -27,7 +29,7 @@ const schema = z.object({
   metrics: z.array(z.string()).min(1, "Select at least one metric"),
   level: z.string().min(1, "Level is required"),
   dateRangeEnum: z.enum(["last7","last14","last30"]),
-  cadence: z.enum(["manual","hourly","every12h","daily"]),
+  cadence: z.enum(["manual","hourly","every 12 hours","daily"]),
   delivery: z.enum(["email","link"]),
   email: z.string().optional()
 }).refine(v => v.delivery === "email" ? !!v.email && /\S+@\S+\.\S+/.test(v.email) : true, {
@@ -121,111 +123,231 @@ export default function ConfigurePage() {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
-    <div className="mx-auto max-w-3xl p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Configure Report</h1>
-        <Link className="text-sm underline" href="/dashboard">Go to Dashboard</Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-8"
+        >
+          {/* Header */}
+          <motion.div variants={itemVariants} className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Link href="/" className="inline-flex items-center text-sm text-slate-600 hover:text-slate-800 transition-colors mb-2">
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Back to Dashboard
+              </Link>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex items-center gap-2">
+                <Settings className="w-8 h-8 text-blue-600" />
+                Configure Report
+              </h1>
+              <p className="text-slate-600">Set up your automated insight report configuration</p>
+            </div>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
+              <CardHeader className="text-center pb-6">
+                <CardTitle className="text-2xl font-bold text-slate-800">Report Settings</CardTitle>
+                <p className="text-slate-600">Configure your platform, metrics, and delivery preferences</p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <motion.div 
+                  variants={itemVariants}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                >
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-slate-700">Platform</Label>
+                    <Select value={form.watch("platform")} onValueChange={(v: "meta" | "tiktok") => form.setValue("platform", v)}>
+                      <SelectTrigger className="h-12 border-slate-200 focus:border-blue-400 focus:ring-blue-400/20">
+                        <SelectValue placeholder="Select platform" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PLATFORM_OPTIONS.map((p) => (
+                          <SelectItem key={p.value} value={p.value} className="cursor-pointer hover:bg-blue-50">
+                            {p.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-slate-700">Date Range</Label>
+                    <Select value={form.watch("dateRangeEnum")} onValueChange={(v: "last7" | "last14" | "last30") => form.setValue("dateRangeEnum", v)}>
+                      <SelectTrigger className="h-12 border-slate-200 focus:border-blue-400 focus:ring-blue-400/20">
+                        <SelectValue placeholder="Pick range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DATE_RANGE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value} className="cursor-pointer hover:bg-blue-50">
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">Metrics</Label>
+                  <MultiSelect
+                    options={metricOptions}
+                    value={form.watch("metrics")}
+                    onChange={(v: string[]) => form.setValue("metrics", v, { shouldValidate: true })}
+                    placeholder="Select one or more metrics"
+                  />
+                  {form.formState.errors.metrics && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-red-600 flex items-center gap-1"
+                    >
+                      {form.formState.errors.metrics.message as string}
+                    </motion.p>
+                  )}
+                </motion.div>
+
+                <motion.div variants={itemVariants} className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">Level</Label>
+                  <Select value={form.watch("level")} onValueChange={(v: string) => form.setValue("level", v, { shouldValidate: true })}>
+                    <SelectTrigger className="h-12 border-slate-200 focus:border-blue-400 focus:ring-blue-400/20">
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {levelOptions.map((l) => (
+                        <SelectItem key={l.value} value={l.value} className="cursor-pointer hover:bg-blue-50">
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.level && (
+                    <motion.p 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-red-600"
+                    >
+                      {form.formState.errors.level.message as string}
+                    </motion.p>
+                  )}
+                </motion.div>
+
+                <motion.div 
+                  variants={itemVariants}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                >
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-slate-700">Cadence</Label>
+                    <Select value={form.watch("cadence")} onValueChange={(v: "manual" | "hourly" | "every 12 hours" | "daily") => form.setValue("cadence", v)}>
+                      <SelectTrigger className="h-12 border-slate-200 focus:border-blue-400 focus:ring-blue-400/20">
+                        <SelectValue placeholder="Select cadence" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CADENCE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value} className="cursor-pointer hover:bg-blue-50">
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-slate-700">Delivery</Label>
+                    <Select value={form.watch("delivery")} onValueChange={(v: "email" | "link") => form.setValue("delivery", v)}>
+                      <SelectTrigger className="h-12 border-slate-200 focus:border-blue-400 focus:ring-blue-400/20">
+                        <SelectValue placeholder="Select delivery" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DELIVERY_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value} className="cursor-pointer hover:bg-blue-50">
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </motion.div>
+
+                {form.watch("delivery") === "email" && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-2"
+                  >
+                    <Label className="text-sm font-semibold text-slate-700">Email Address</Label>
+                    <Input
+                      placeholder="you@example.com"
+                      value={form.watch("email") ?? ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        form.setValue("email", e.target.value, { shouldValidate: true })
+                      }
+                      className="h-12 border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
+                    />
+                    {form.formState.errors.email && (
+                      <motion.p 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-sm text-red-600"
+                      >
+                        {form.formState.errors.email.message as string}
+                      </motion.p>
+                    )}
+                  </motion.div>
+                )}
+
+                <motion.div variants={itemVariants} className="pt-6">
+                  <Button 
+                    disabled={loading} 
+                    onClick={form.handleSubmit(onSubmit)}
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Saving Configuration...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-5 h-5 mr-2" />
+                        Save & Start Scheduling
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Platform</Label>
-              <Select value={form.watch("platform")} onValueChange={(v: "meta" | "tiktok") => form.setValue("platform", v)}>
-                <SelectTrigger><SelectValue placeholder="Select platform" /></SelectTrigger>
-                <SelectContent>
-                  {PLATFORM_OPTIONS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Date Range</Label>
-              <Select value={form.watch("dateRangeEnum")} onValueChange={(v: "last7" | "last14" | "last30") => form.setValue("dateRangeEnum", v)}>
-                <SelectTrigger><SelectValue placeholder="Pick range" /></SelectTrigger>
-                <SelectContent>
-                  {DATE_RANGE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Metrics</Label>
-            <MultiSelect
-              options={metricOptions}
-              value={form.watch("metrics")}
-              onChange={(v: string[]) => form.setValue("metrics", v, { shouldValidate: true })}
-              placeholder="Select one or more metrics"
-            />
-            {form.formState.errors.metrics && (
-              <p className="text-sm text-red-600">{form.formState.errors.metrics.message as string}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Level</Label>
-            <Select value={form.watch("level")} onValueChange={(v: string) => form.setValue("level", v, { shouldValidate: true })}>
-              <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
-              <SelectContent>
-                {levelOptions.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {form.formState.errors.level && (
-              <p className="text-sm text-red-600">{form.formState.errors.level.message as string}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Cadence</Label>
-              <Select value={form.watch("cadence")} onValueChange={(v: "manual" | "hourly" | "every12h" | "daily") => form.setValue("cadence", v)}>
-                <SelectTrigger><SelectValue placeholder="Select cadence" /></SelectTrigger>
-                <SelectContent>
-                  {CADENCE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Delivery</Label>
-              <Select value={form.watch("delivery")} onValueChange={(v: "email" | "link") => form.setValue("delivery", v)}>
-                <SelectTrigger><SelectValue placeholder="Select delivery" /></SelectTrigger>
-                <SelectContent>
-                  {DELIVERY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {form.watch("delivery") === "email" && (
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                placeholder="you@example.com"
-                value={form.watch("email") ?? ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  form.setValue("email", e.target.value, { shouldValidate: true })
-                }
-              />
-              {form.formState.errors.email && (
-                <p className="text-sm text-red-600">{form.formState.errors.email.message as string}</p>
-              )}
-            </div>
-          )}
-
-          <div className="pt-2">
-            <Button disabled={loading} onClick={form.handleSubmit(onSubmit)}>
-              {loading ? "Saving..." : "Save & Start"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

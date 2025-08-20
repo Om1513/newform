@@ -25,7 +25,7 @@ export function reschedule() {
   // Map cadence to cron expr
   const expr =
     cadence === "hourly"   ? "0 * * * *" :
-    cadence === "every12h" ? "0 */12 * * *" :
+    cadence === "every 12 hours" ? "0 */12 * * *" :
     /* daily */              "0 9 * * *";
 
   // Note: omit the options object — scheduled is true by default.
